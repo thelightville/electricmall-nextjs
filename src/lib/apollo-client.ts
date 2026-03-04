@@ -19,6 +19,14 @@ const httpLink = new HttpLink({
 const apolloClient = new ApolloClient({
   link: from([errorLink, httpLink]),
   cache: new InMemoryCache({
+    // Tell Apollo which concrete types implement abstract interfaces.
+    // Without this, Apollo 3 uses heuristic matching and product.slug
+    // can come back as undefined for SimpleProduct / VariableProduct nodes.
+    possibleTypes: {
+      Product: ['SimpleProduct', 'VariableProduct', 'ExternalProduct', 'GroupProduct'],
+      ProductUnion: ['SimpleProduct', 'VariableProduct', 'ExternalProduct', 'GroupProduct'],
+      Node: ['SimpleProduct', 'VariableProduct', 'ExternalProduct', 'GroupProduct', 'ProductCategory'],
+    },
     typePolicies: {
       Query: {
         fields: {

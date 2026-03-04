@@ -49,8 +49,13 @@ export function ProductCard({ product }: ProductCardProps) {
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-300">
-            <ShoppingCart className="w-10 h-10" />
+          <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 text-gray-300">
+            <svg viewBox="0 0 64 64" className="w-12 h-12 mb-1 text-gray-200" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <rect x="8" y="14" width="48" height="36" rx="3"/>
+              <path d="M20 26h4m4 0h4m4 0h4M20 32h4m4 0h4m4 0h4M20 38h12"/>
+              <path d="M8 20h48" strokeWidth="1"/>
+            </svg>
+            <span className="text-[10px] text-gray-400 font-medium">No image</span>
           </div>
         )}
 

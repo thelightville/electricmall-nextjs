@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ShoppingCart, Search, Menu, X, Zap, Phone } from 'lucide-react'
+import { ShoppingCart, Search, Menu, X, Phone } from 'lucide-react'
 import { useCart } from '@/components/cart/cart-context'
 
 const navigation = [
@@ -57,18 +57,15 @@ export function Header() {
       {/* Main header */}
       <div className="container-main py-4 flex items-center gap-4">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 flex-shrink-0">
-          <div className="w-9 h-9 bg-brand-primary rounded-lg flex items-center justify-center">
-            <Zap className="w-5 h-5 text-white fill-white" />
-          </div>
-          <div>
-            <span className="text-xl font-extrabold text-brand-dark leading-none block">
-              Electric<span className="text-brand-primary">Mall</span>
-            </span>
-            <span className="text-[10px] text-gray-400 leading-none tracking-wider uppercase">
-              Nigeria
-            </span>
-          </div>
+        <Link href="/" className="flex items-center flex-shrink-0">
+          <Image
+            src="/images/electricmall-logo-wide.png"
+            alt="Electric Mall Nigeria"
+            width={160}
+            height={58}
+            className="h-12 w-auto object-contain"
+            priority
+          />
         </Link>
 
         {/* Search bar */}
