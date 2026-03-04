@@ -12,7 +12,7 @@ services:
     container_name: electricmall-nextjs
     restart: unless-stopped
     ports:
-      - "8031:3000"
+      - "8040:3000"
     environment:
       NODE_ENV: production
       NEXTAUTH_URL: ${NEXTAUTH_URL:-https://electricmall.myapps.com.ng}
