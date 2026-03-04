@@ -1,0 +1,38 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        NEXT_PUBLIC_GRAPHQL_URL: ${NEXT_PUBLIC_GRAPHQL_URL}
+        NEXT_PUBLIC_WORDPRESS_URL: ${NEXT_PUBLIC_WORDPRESS_URL}
+        NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY: ${NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY}
+        NEXT_PUBLIC_FLUTTERWAVE_PUBLIC_KEY: ${NEXT_PUBLIC_FLUTTERWAVE_PUBLIC_KEY}
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-https://electricmall.myapps.com.ng}
+    container_name: electricmall-nextjs
+    restart: unless-stopped
+    ports:
+      - "8031:3000"
+    environment:
+      NODE_ENV: production
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-https://electricmall.myapps.com.ng}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      WORDPRESS_URL: ${WORDPRESS_URL:-http://172.16.16.117:8019}
+      WOOCOMMERCE_CONSUMER_KEY: ${WOOCOMMERCE_CONSUMER_KEY}
+      WOOCOMMERCE_CONSUMER_SECRET: ${WOOCOMMERCE_CONSUMER_SECRET}
+      PAYSTACK_SECRET_KEY: ${PAYSTACK_SECRET_KEY}
+      FLUTTERWAVE_SECRET_KEY: ${FLUTTERWAVE_SECRET_KEY}
+      FLUTTERWAVE_SECRET_HASH: ${FLUTTERWAVE_SECRET_HASH}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      REVALIDATION_SECRET: ${REVALIDATION_SECRET}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    security_opt:
+      - apparmor:unconfined
+      - seccomp:unconfined
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
