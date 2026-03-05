@@ -30,7 +30,21 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     })
     const cat = data?.productCategory
     if (!cat) return {}
-    return { title: cat.name, description: `Shop ${cat.name} products at Electric Mall Nigeria` }
+    const desc = `Shop ${cat.name} products at Electric Mall Nigeria — quality electrical supplies at the best prices.`
+    return {
+      title: cat.name,
+      description: desc,
+      openGraph: {
+        title: `${cat.name} | Electric Mall Nigeria`,
+        description: desc,
+        type: 'website',
+      },
+      twitter: {
+        card: 'summary',
+        title: `${cat.name} | Electric Mall Nigeria`,
+        description: desc,
+      },
+    }
   } catch {
     return {}
   }

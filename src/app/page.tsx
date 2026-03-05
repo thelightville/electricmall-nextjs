@@ -14,6 +14,7 @@ import {
 import apolloClient from '@/lib/apollo-client'
 import { GET_CATEGORIES, GET_FEATURED_PRODUCTS, GET_SALE_PRODUCTS } from '@/lib/graphql/queries'
 import { ProductCard } from '@/components/product/product-card'
+import { HeroSlider } from '@/components/home/hero-slider'
 import type { ProductCategory, ProductListItem } from '@/types'
 
 export const revalidate = 3600
@@ -64,14 +65,16 @@ const CATEGORY_STOCK: Record<string, string> = {
 const DEFAULT_CATEGORY_IMAGE = 'https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?w=400&q=80'
 
 const brands = [
-  { name: 'Schneider Electric', abbr: 'SE', color: '#3DCD58', text: '#fff' },
-  { name: 'CHINT',              abbr: 'CH', color: '#e60012', text: '#fff' },
-  { name: 'OSRAM',              abbr: 'OS', color: '#ff9900', text: '#222' },
-  { name: 'Legrand',            abbr: 'LG', color: '#5b2d8e', text: '#fff' },
-  { name: 'Havells',            abbr: 'HV', color: '#e31837', text: '#fff' },
-  { name: 'Siemens',            abbr: 'SI', color: '#009999', text: '#fff' },
-  { name: 'Hager',              abbr: 'HG', color: '#004494', text: '#fff' },
-  { name: 'Philips',            abbr: 'PH', color: '#0066a1', text: '#fff' },
+  { name: 'Schneider Electric', logo: '/images/brands/schneider.png' },
+  { name: 'CHINT',              logo: '/images/brands/chint.png'     },
+  { name: 'OSRAM',              logo: '/images/brands/osram.png'     },
+  { name: 'Legrand',            logo: '/images/brands/legrand.png'   },
+  { name: 'Havells',            logo: '/images/brands/havells.png'   },
+  { name: 'Siemens',            logo: '/images/brands/siemens.png'   },
+  { name: 'Hager',              logo: '/images/brands/hager.png'     },
+  { name: 'Philips',            logo: '/images/brands/philips.png'   },
+  { name: 'Luceco',             logo: '/images/brands/luceco.svg'    },
+  { name: 'British General',    logo: '/images/brands/bg.svg'        },
 ]
 
 export default async function HomePage() {
@@ -79,92 +82,7 @@ export default async function HomePage() {
 
   return (
     <>
-      {/* ─── HERO ──────────────────────────────────────────────────────────── */}
-      <section className="bg-gradient-to-br from-[#0f0f0f] via-brand-dark to-[#1a0505] text-white overflow-hidden">
-        <div className="container-main py-14 md:py-20">
-          <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
-
-            {/* Left: content */}
-            <div className="animate-fade-up">
-              <div className="inline-flex items-center gap-2 bg-brand-primary/20 border border-brand-primary/30 rounded-full px-4 py-1.5 text-sm text-brand-accent font-medium mb-6">
-                <Zap className="w-4 h-4 fill-current" />
-                Nigeria&apos;s #1 Electrical Superstore
-              </div>
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight mb-6">
-                Quality Electrical<br />
-                <span className="text-gradient">Equipment</span><br />
-                at Best Prices
-              </h1>
-              <p className="text-gray-300 text-lg mb-8 leading-relaxed max-w-lg">
-                Shop cables, switches, lighting, solar products, distribution boards
-                and industrial equipment — delivered to your doorstep across Nigeria.
-              </p>
-              <div className="flex flex-wrap gap-4 mb-10">
-                <Link href="/shop" className="btn-primary text-base px-8 py-3.5 rounded-xl">
-                  Shop All Products <ArrowRight className="w-5 h-5" />
-                </Link>
-                <Link
-                  href="/product-category/schneider-sections"
-                  className="btn-secondary text-base px-8 py-3.5 rounded-xl border-white/20 text-white hover:bg-white hover:text-brand-dark"
-                >
-                  Schneider Products
-                </Link>
-              </div>
-
-              {/* Trust stats */}
-              <div className="flex items-center gap-8 pt-6 border-t border-white/10">
-                <div>
-                  <p className="text-2xl font-extrabold text-white">10K+</p>
-                  <p className="text-xs text-gray-400 mt-0.5">Products</p>
-                </div>
-                <div className="w-px h-10 bg-white/10" />
-                <div>
-                  <p className="text-2xl font-extrabold text-white">5K+</p>
-                  <p className="text-xs text-gray-400 mt-0.5">Happy Customers</p>
-                </div>
-                <div className="w-px h-10 bg-white/10" />
-                <div>
-                  <p className="text-2xl font-extrabold text-brand-accent">10%</p>
-                  <p className="text-xs text-gray-400 mt-0.5">Off High Street</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Right: hero image */}
-            <div className="hidden lg:block">
-              <div className="relative w-full h-[460px] rounded-2xl overflow-hidden shadow-2xl">
-                <Image
-                  src="https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?w=800&q=80"
-                  alt="Electrical equipment showcase"
-                  fill
-                  className="object-cover"
-                  priority
-                  sizes="700px"
-                />
-                <div className="absolute inset-0 bg-gradient-to-l from-transparent via-transparent to-[#0f0f0f]/50" />
-
-                {/* Floating badge: genuine */}
-                <div className="absolute bottom-6 left-6 bg-white rounded-xl p-3.5 shadow-xl flex items-center gap-3">
-                  <div className="w-10 h-10 bg-brand-primary/10 rounded-lg flex items-center justify-center">
-                    <Shield className="w-5 h-5 text-brand-primary" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-brand-dark leading-tight">100% Genuine</p>
-                    <p className="text-xs text-gray-500">All brands verified</p>
-                  </div>
-                </div>
-
-                {/* Floating badge: discount */}
-                <div className="absolute top-6 right-6 bg-brand-accent rounded-xl px-4 py-2.5 shadow-lg text-center">
-                  <p className="text-[10px] font-bold text-brand-dark uppercase tracking-wide">Up to</p>
-                  <p className="text-2xl font-extrabold text-brand-dark leading-none">10% OFF</p>
-                  <p className="text-[10px] font-medium text-brand-dark/70">high street prices</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <HeroSlider />
 
       {/* ─── FEATURES STRIP ───────────────────────────────────────────────── */}
       <section className="bg-brand-primary">
@@ -327,18 +245,22 @@ export default async function HomePage() {
             <h2 className="section-title">Top Brands We Carry</h2>
             <p className="text-gray-500 mt-2">Only authorised, authentic products from world-class manufacturers</p>
           </div>
-          <div className="grid grid-cols-4 md:grid-cols-8 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-10 gap-3">
             {brands.map((brand) => (
               <Link
                 key={brand.name}
                 href={`/shop?search=${encodeURIComponent(brand.name.split(' ')[0])}`}
-                className="card p-3 text-center hover:shadow-brand-sm hover:border-brand-primary transition-all group"
+                className="card p-4 text-center hover:shadow-brand-sm hover:border-brand-primary transition-all group flex flex-col items-center justify-between gap-3"
               >
-                <div
-                  className="w-10 h-10 rounded-lg mx-auto mb-2 flex items-center justify-center text-xs font-extrabold group-hover:scale-110 transition-transform"
-                  style={{ backgroundColor: brand.color, color: brand.text }}
-                >
-                  {brand.abbr}
+                <div className="w-full h-12 flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <Image
+                    src={brand.logo}
+                    alt={brand.name}
+                    width={100}
+                    height={48}
+                    className="max-h-12 w-auto object-contain"
+                    unoptimized
+                  />
                 </div>
                 <p className="text-[10px] font-semibold text-brand-dark leading-tight line-clamp-2 group-hover:text-brand-primary transition-colors">
                   {brand.name}

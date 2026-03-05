@@ -12,8 +12,9 @@ const nextConfig = {
   async headers() {
     return [
       {
-        source: '/api/webhooks/:path*',
-        headers: [{ key: 'Cache-Control', value: 'no-store' }],
+        // Prevent Cloudflare from caching page HTML — static assets (/_next/static/) are still cached by their content-hash filenames
+        source: '/((?!_next/static|_next/image|favicon.ico|images).*)',
+        headers: [{ key: 'Cache-Control', value: 'no-store, no-cache, must-revalidate' }],
       },
     ]
   },

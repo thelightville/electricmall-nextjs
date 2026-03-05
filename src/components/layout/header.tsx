@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { ShoppingCart, Search, Menu, X, Phone } from 'lucide-react'
 import { useCart } from '@/components/cart/cart-context'
+import { ElectricMallLogo } from '@/components/layout/logo'
 
 const navigation = [
   { name: 'Shop', href: '/shop' },
@@ -58,14 +59,7 @@ export function Header() {
       <div className="container-main py-4 flex items-center gap-4">
         {/* Logo */}
         <Link href="/" className="flex items-center flex-shrink-0">
-          <Image
-            src="/images/electricmall-logo-wide.png"
-            alt="Electric Mall Nigeria"
-            width={160}
-            height={58}
-            className="h-12 w-auto object-contain"
-            priority
-          />
+          <ElectricMallLogo variant="dark" height={88} />
         </Link>
 
         {/* Search bar */}
@@ -124,20 +118,20 @@ export function Header() {
       </div>
 
       {/* Desktop nav */}
-      <nav className="border-t border-gray-100 hidden md:block">
-        <div className="container-main flex items-center gap-1 py-2 overflow-x-auto scrollbar-hide">
+      <nav className="bg-brand-primary hidden md:block">
+        <div className="container-main flex items-center gap-1 py-1.5 overflow-x-auto scrollbar-hide">
           {navigation.map((item) => (
             <Link
               key={item.name}
               href={item.href}
-              className="flex-shrink-0 px-4 py-2 text-sm font-medium text-brand-gray rounded-md hover:bg-brand-primary hover:text-white transition-colors whitespace-nowrap"
+              className="flex-shrink-0 px-4 py-2 text-sm font-medium text-white/90 rounded-md hover:bg-white/15 hover:text-white transition-colors whitespace-nowrap"
             >
               {item.name}
             </Link>
           ))}
           <Link
             href="/shop"
-            className="ml-auto flex-shrink-0 px-4 py-2 text-sm font-medium bg-brand-accent text-brand-dark rounded-md hover:bg-yellow-300 transition-colors"
+            className="ml-auto flex-shrink-0 px-4 py-2 text-sm font-bold bg-brand-accent text-brand-dark rounded-md hover:bg-yellow-300 transition-colors whitespace-nowrap"
           >
             All Products
           </Link>

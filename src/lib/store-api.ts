@@ -15,7 +15,7 @@ const STORE_API_BASE = '/api/store'
 export function getCartToken(): string | null {
   if (typeof window === 'undefined') return null
   try {
-    return sessionStorage.getItem('woo-cart-token')
+    return localStorage.getItem('woo-cart-token')
   } catch {
     return null
   }
@@ -24,7 +24,7 @@ export function getCartToken(): string | null {
 export function setCartToken(token: string): void {
   if (typeof window === 'undefined') return
   try {
-    sessionStorage.setItem('woo-cart-token', token)
+    localStorage.setItem('woo-cart-token', token)
   } catch {
     // ignore
   }
@@ -92,10 +92,15 @@ export async function updateCartItem(key: string, quantity: number): Promise<Car
 }
 
 export async function removeCartItem(key: string): Promise<Cart> {
-  return storeRequest<Cart>('cart/remove-item', {
-    method: 'DELETE',
+  // WooCommerce Store API uses POST /cart/remove-item with {key} in the JSON body.
+  // DELETE routes do not exist for this endpoint.
+  console.log('[removeCartItem] called with key:', key)
+  const result = await storeRequest<Cart>('cart/remove-item', {
+    method: 'POST',
     body: { key },
   })
+  console.log('[removeCartItem] success, items remaining:', result?.items?.length)
+  return result
 }
 
 export async function applyCoupon(code: string): Promise<Cart> {
@@ -106,8 +111,9 @@ export async function applyCoupon(code: string): Promise<Cart> {
 }
 
 export async function removeCoupon(code: string): Promise<Cart> {
+  // WooCommerce Store API uses POST /cart/remove-coupon with {code} in the body.
   return storeRequest<Cart>('cart/remove-coupon', {
-    method: 'DELETE',
+    method: 'POST',
     body: { code },
   })
 }

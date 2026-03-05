@@ -26,6 +26,15 @@ export const metadata: Metadata = {
     siteName: 'Electric Mall Nigeria',
     locale: 'en_NG',
     type: 'website',
+    title: 'Electric Mall Nigeria — Online Electrical Superstore',
+    description: 'Shop quality cables, switches, lighting, distribution boards, solar products and industrial equipment at the best prices. Delivered anywhere in Nigeria.',
+    images: [{ url: '/images/electricmall-logo-v2.png', width: 247, height: 120, alt: 'Electric Mall Nigeria' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Electric Mall Nigeria — Online Electrical Superstore',
+    description: 'Shop quality cables, switches, lighting, distribution boards, solar products and industrial equipment across Nigeria.',
+    images: ['/images/electricmall-logo-v2.png'],
   },
   keywords: [
     'electrical supplies Nigeria',

@@ -5,8 +5,15 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useCart } from '@/components/cart/cart-context'
-import { formatStorePrice, generateReference, toKobo } from '@/lib/utils'
-import { CreditCard, Wallet, Globe } from 'lucide-react'
+import { formatStorePrice } from '@/lib/utils'
+import { submitCheckout } from '@/lib/store-api'
+import { Building2, Info } from 'lucide-react'
+
+const BANK = {
+  name: 'Wema Bank',
+  accountName: 'Electricmall',
+  accountNumber: '0122884371',
+}
 
 const checkoutSchema = z.object({
   first_name: z.string().min(1, 'First name is required'),
@@ -25,21 +32,16 @@ type CheckoutFormData = z.infer<typeof checkoutSchema>
 
 export default function CheckoutPage() {
   const { cart } = useCart()
-  const [paymentMethod, setPaymentMethod] = useState<'paystack' | 'flutterwave' | 'stripe'>('paystack')
   const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState('')
 
   const totals = cart?.totals
   const minorUnit = totals?.currency_minor_unit ?? 2
-
-  const totalNaira = totals
-    ? Number(totals.total_price) / Math.pow(10, minorUnit)
-    : 0
 
   const {
     register,
     handleSubmit,
     formState: { errors },
-    getValues,
   } = useForm<CheckoutFormData>({
     resolver: zodResolver(checkoutSchema),
     defaultValues: { country: 'NG' },
@@ -47,61 +49,35 @@ export default function CheckoutPage() {
 
   const onSubmit = async (data: CheckoutFormData) => {
     setSubmitting(true)
-    const ref = generateReference('EM')
-
+    setError('')
     try {
-      if (paymentMethod === 'paystack') {
-        // Dynamically load Paystack
-        const PaystackPop = (await import('@paystack/inline-js')).default
-        const handler = new PaystackPop()
-        handler.newTransaction({
-          key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY!,
+      const result = await submitCheckout({
+        billing_address: {
+          first_name: data.first_name,
+          last_name: data.last_name,
+          address_1: data.address_1,
+          city: data.city,
+          state: data.state,
+          postcode: data.postcode || '',
+          country: data.country || 'NG',
           email: data.email,
-          amount: toKobo(totalNaira),
-          ref,
-          currency: 'NGN',
-          metadata: {
-            custom_fields: [
-              { display_name: 'Name', variable_name: 'name', value: `${data.first_name} ${data.last_name}` },
-              { display_name: 'Phone', variable_name: 'phone', value: data.phone },
-            ],
-          },
-          onSuccess: async (transaction: { reference: string }) => {
-            // Verify + create order
-            await fetch('/api/checkout/verify', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ reference: transaction.reference, billing: data, payment_method: 'paystack' }),
-            })
-            window.location.href = `/checkout/complete?ref=${transaction.reference}`
-          },
-          onCancel: () => setSubmitting(false),
-        })
-      } else if (paymentMethod === 'flutterwave') {
-        const { useFlutterwave, closePaymentModal } = await import('flutterwave-react-v3')
-        // For Flutterwave, we redirect to their hosted page
-        const response = await fetch('/api/checkout/initiate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ gateway: 'flutterwave', amount: totalNaira, email: data.email, ref, billing: data }),
-        })
-        const result = await response.json()
-        if (result.link) {
-          window.location.href = result.link
-        }
-      } else if (paymentMethod === 'stripe') {
-        const response = await fetch('/api/checkout/initiate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ gateway: 'stripe', amount: totalNaira, email: data.email, ref, billing: data }),
-        })
-        const result = await response.json()
-        if (result.url) {
-          window.location.href = result.url
-        }
-      }
+          phone: data.phone,
+        },
+        shipping_address: {
+          first_name: data.first_name,
+          last_name: data.last_name,
+          address_1: data.address_1,
+          city: data.city,
+          state: data.state,
+          postcode: data.postcode || '',
+          country: data.country || 'NG',
+        },
+        customer_note: data.order_notes,
+        payment_method: 'bacs',
+      })
+      window.location.href = `/checkout/complete?order_id=${result.order_id}&method=bacs`
     } catch (err) {
-      console.error('Checkout error:', err)
+      setError(err instanceof Error ? err.message : 'Could not place order. Please try again.')
       setSubmitting(false)
     }
   }
@@ -121,8 +97,11 @@ export default function CheckoutPage() {
 
       <form onSubmit={handleSubmit(onSubmit)}>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Billing details */}
+
+          {/* Left — billing + payment */}
           <div className="lg:col-span-2 space-y-6">
+
+            {/* Billing details */}
             <div className="card p-6">
               <h2 className="text-lg font-bold text-brand-dark mb-5">Billing Details</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -177,45 +156,41 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            {/* Payment method */}
+            {/* Payment method — Direct Bank Transfer */}
             <div className="card p-6">
               <h2 className="text-lg font-bold text-brand-dark mb-5">Payment Method</h2>
-              <div className="space-y-3">
-                {[
-                  { id: 'paystack', label: 'Pay with Paystack', icon: CreditCard, desc: 'Debit/Credit cards, Bank transfer, USSD' },
-                  { id: 'flutterwave', label: 'Pay with Flutterwave', icon: Wallet, desc: 'Cards, Mobile money, Bank transfer' },
-                  { id: 'stripe', label: 'Pay with Stripe', icon: Globe, desc: 'International cards (Visa, Mastercard, Amex)' },
-                ].map((method) => (
-                  <label
-                    key={method.id}
-                    className={`flex items-start gap-4 p-4 rounded-xl border-2 cursor-pointer transition-colors ${
-                      paymentMethod === method.id
-                        ? 'border-brand-primary bg-brand-primary/5'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="payment_method"
-                      value={method.id}
-                      checked={paymentMethod === method.id}
-                      onChange={() => setPaymentMethod(method.id as typeof paymentMethod)}
-                      className="mt-1 accent-brand-primary"
-                    />
-                    <div className="flex items-start gap-3">
-                      <method.icon className={`w-5 h-5 mt-0.5 flex-shrink-0 ${paymentMethod === method.id ? 'text-brand-primary' : 'text-gray-400'}`} />
-                      <div>
-                        <p className="font-semibold text-brand-dark">{method.label}</p>
-                        <p className="text-gray-500 text-sm">{method.desc}</p>
-                      </div>
-                    </div>
-                  </label>
-                ))}
+
+              {/* Selected option display */}
+              <div className="flex items-start gap-4 p-4 rounded-xl border-2 border-brand-primary bg-brand-primary/5 mb-5">
+                <Building2 className="w-5 h-5 text-brand-primary mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-semibold text-brand-dark">Direct Bank Transfer</p>
+                  <p className="text-gray-500 text-sm">Pay directly into our bank account</p>
+                </div>
+              </div>
+
+              {/* Bank details */}
+              <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 space-y-3">
+                <div className="flex items-center gap-2 text-sm font-semibold text-brand-dark mb-1">
+                  <Info className="w-4 h-4 text-brand-primary" />
+                  Bank Account Details
+                </div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                  <span className="text-gray-500">Bank Name</span>
+                  <span className="font-semibold text-brand-dark">{BANK.name}</span>
+                  <span className="text-gray-500">Account Name</span>
+                  <span className="font-semibold text-brand-dark">{BANK.accountName}</span>
+                  <span className="text-gray-500">Account Number</span>
+                  <span className="font-bold text-brand-primary text-base tracking-wider">{BANK.accountNumber}</span>
+                </div>
+                <p className="text-xs text-gray-500 pt-2 border-t border-gray-200">
+                  Please use your <strong>Order ID</strong> as the payment reference. Your order will not be shipped until the funds have cleared in our account.
+                </p>
               </div>
             </div>
           </div>
 
-          {/* Order summary */}
+          {/* Right — order summary */}
           <div>
             <div className="card p-6 sticky top-24">
               <h2 className="text-lg font-bold text-brand-dark mb-5">Your Order</h2>
@@ -252,16 +227,22 @@ export default function CheckoutPage() {
                 </div>
               )}
 
+              {error && (
+                <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+                  {error}
+                </div>
+              )}
+
               <button
                 type="submit"
                 disabled={submitting}
                 className="btn-primary w-full mt-6 justify-center py-4"
               >
-                {submitting ? 'Processing…' : `Place Order — ${formatStorePrice(totals?.total_price || '0', minorUnit)}`}
+                {submitting ? 'Placing Order…' : `Place Order — ${formatStorePrice(totals?.total_price || '0', minorUnit)}`}
               </button>
 
               <p className="text-xs text-gray-400 text-center mt-3">
-                🔒 Secured by {paymentMethod.charAt(0).toUpperCase() + paymentMethod.slice(1)}
+                🏦 You will receive bank details on the confirmation page
               </p>
             </div>
           </div>

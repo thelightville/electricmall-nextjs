@@ -1,9 +1,10 @@
 'use client'
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
-import type { Cart, CartItem } from '@/types'
+import type { Cart } from '@/types'
 import {
   getCart,
+  getCartToken,
   addToCart as apiAddToCart,
   updateCartItem as apiUpdateItem,
   removeCartItem as apiRemoveItem,
@@ -14,6 +15,8 @@ interface CartContextType {
   cart: Cart | null
   isLoading: boolean
   isOpen: boolean
+  cartError: string | null
+  clearCartError: () => void
   openCart: () => void
   closeCart: () => void
   addItem: (productId: number, quantity?: number) => Promise<void>
@@ -30,6 +33,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [cart, setCart] = useState<Cart | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
+  const [cartError, setCartError] = useState<string | null>(null)
 
   const refreshCart = useCallback(async () => {
     try {
@@ -72,11 +76,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const removeItem = useCallback(async (key: string) => {
     setIsLoading(true)
+    setCartError(null)
+    console.log('[cart] removeItem called, key:', key, '| current token:', getCartToken()?.slice(0, 20))
     try {
       const data = await apiRemoveItem(key)
+      console.log('[cart] removeItem success, items now:', data?.items?.length)
       setCart(data)
     } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to remove item'
       console.error('Remove cart item error:', err)
+      setCartError(msg)
     } finally {
       setIsLoading(false)
     }
@@ -103,6 +112,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         cart,
         isLoading,
         isOpen,
+        cartError,
+        clearCartError: () => setCartError(null),
         openCart: () => setIsOpen(true),
         closeCart: () => setIsOpen(false),
         addItem,

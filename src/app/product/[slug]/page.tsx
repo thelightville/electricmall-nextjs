@@ -36,11 +36,22 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     })
     const product = data?.product
     if (!product) return {}
+    const desc = product.shortDescription?.replace(/<[^>]*>/g, '').slice(0, 160) || product.name
     return {
       title: product.name,
-      description: product.shortDescription?.replace(/<[^>]*>/g, '').slice(0, 160) || product.name,
+      description: desc,
       openGraph: {
-        title: product.name,
+        title: `${product.name} | Electric Mall Nigeria`,
+        description: desc,
+        type: 'website',
+        images: product.image?.sourceUrl
+          ? [{ url: product.image.sourceUrl, width: 800, height: 800, alt: product.name }]
+          : [],
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title: `${product.name} | Electric Mall Nigeria`,
+        description: desc,
         images: product.image?.sourceUrl ? [product.image.sourceUrl] : [],
       },
     }
@@ -82,8 +93,27 @@ export default async function ProductPage({ params }: Props) {
   const categories = product.productCategories?.nodes || []
   const relatedProducts = (product.related?.nodes || []) as import('@/types').ProductListItem[]
 
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: product.name,
+    description: product.shortDescription?.replace(/<[^>]*>/g, '') || product.name,
+    image: product.image?.sourceUrl,
+    offers: {
+      '@type': 'Offer',
+      priceCurrency: 'NGN',
+      price: price?.replace(/[^\d.]/g, '') || '0',
+      availability: inStock
+        ? 'https://schema.org/InStock'
+        : 'https://schema.org/OutOfStock',
+      seller: { '@type': 'Organization', name: 'Electric Mall Nigeria' },
+    },
+  }
+
   return (
-    <div className="container-main section-padding">
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <div className="container-main section-padding">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1 text-sm text-gray-400 mb-6">
         <Link href="/" className="hover:text-brand-primary transition-colors">Home</Link>
@@ -253,5 +283,6 @@ export default async function ProductPage({ params }: Props) {
         </div>
       )}
     </div>
+    </>
   )
 }

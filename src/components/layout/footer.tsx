@@ -1,6 +1,6 @@
 import Link from 'next/link'
-import Image from 'next/image'
 import { Phone, Mail, MapPin } from 'lucide-react'
+import { ElectricMallLogo } from '@/components/layout/logo'
 
 const footerLinks = {
   shop: [
@@ -34,13 +34,7 @@ export function Footer() {
         {/* Brand */}
         <div className="lg:col-span-1">
           <Link href="/" className="flex items-center mb-5">
-            <Image
-              src="/images/logo-footer.png"
-              alt="Electric Mall Nigeria"
-              width={160}
-              height={40}
-              className="h-10 w-auto object-contain brightness-0 invert"
-            />
+            <ElectricMallLogo variant="light" height={88} />
           </Link>
           <p className="text-sm text-gray-400 leading-relaxed mb-5">
             Nigeria's leading online electrical superstore — quality cables,

@@ -36,7 +36,8 @@ export function formatPrice(
 ): string {
   if (value === undefined || value === null) return ''
   // Strip HTML tags (WC sometimes returns <span>₦1,000</span>)
-  const clean = String(value).replace(/<[^>]*>/g, '').replace(/₦/g, '').trim()
+  // Also strip commas so parseFloat('2,480.00') → 2480 not 2
+  const clean = String(value).replace(/<[^>]*>/g, '').replace(/₦/g, '').replace(/,/g, '').trim()
   const num = parseFloat(clean)
   if (isNaN(num)) return String(value).replace(/<[^>]*>/g, '')
   return `${currencySymbol}${num.toLocaleString('en-NG', {

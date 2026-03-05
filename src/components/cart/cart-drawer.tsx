@@ -9,7 +9,7 @@ import { useCart } from './cart-context'
 import { formatStorePrice } from '@/lib/utils'
 
 export function CartDrawer() {
-  const { cart, isOpen, closeCart, updateItem, removeItem, isLoading } = useCart()
+  const { cart, isOpen, closeCart, updateItem, removeItem, isLoading, cartError, clearCartError } = useCart()
   const overlayRef = useRef<HTMLDivElement>(null)
 
   const totals = cart?.totals
@@ -59,6 +59,14 @@ export function CartDrawer() {
                 <X className="w-5 h-5 text-gray-500" />
               </button>
             </div>
+
+            {/* Error banner */}
+            {cartError && (
+              <div className="flex items-center justify-between gap-2 px-5 py-2.5 bg-red-50 border-b border-red-100 text-red-700 text-sm">
+                <span>⚠ {cartError}</span>
+                <button onClick={clearCartError} className="shrink-0 text-red-400 hover:text-red-600">✕</button>
+              </div>
+            )}
 
             {/* Items */}
             <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">

@@ -60,8 +60,9 @@ async function proxyRequest(
   const auth = request.headers.get('authorization')
   if (auth) headers['Authorization'] = auth
 
-  // Add WC credentials header for store API
-  headers['X-WP-Nonce'] = nonce || ''
+  // Only forward X-WP-Nonce if a nonce is actually present.
+  // Sending an empty value causes WooCommerce to return 401.
+  if (nonce) headers['X-WP-Nonce'] = nonce
 
   let body: string | undefined
   if (!['GET', 'HEAD'].includes(method)) {
@@ -71,6 +72,8 @@ async function proxyRequest(
       // no body
     }
   }
+
+  console.log(`[store-proxy] ${method} /${path} | token:${cartToken ? cartToken.slice(0,10) : 'NONE'} | body:${body?.slice(0,80) ?? 'none'}`)
 
   try {
     const upstream = await fetch(upstreamUrl, {
@@ -82,6 +85,7 @@ async function proxyRequest(
     })
 
     const responseBody = await upstream.text()
+    console.log(`[store-proxy] upstream responded: ${upstream.status} | path:${path} | body:${responseBody.slice(0,120)}`)
 
     const response = new NextResponse(responseBody, {
       status: upstream.status,

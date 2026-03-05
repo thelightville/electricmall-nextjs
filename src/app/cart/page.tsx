@@ -8,7 +8,7 @@ import { useCart } from '@/components/cart/cart-context'
 import { formatStorePrice } from '@/lib/utils'
 
 export default function CartPage() {
-  const { cart, updateItem, removeItem, applyCoupon, isLoading } = useCart()
+  const { cart, updateItem, removeItem, applyCoupon, isLoading, cartError, clearCartError } = useCart()
   const [couponCode, setCouponCode] = useState('')
   const [couponError, setCouponError] = useState('')
   const [couponLoading, setCouponLoading] = useState(false)
@@ -50,6 +50,12 @@ export default function CartPage() {
     <div className="container-main section-padding">
       <h1 className="section-title mb-8">Shopping Cart</h1>
 
+      {cartError && (
+        <div className="flex items-center justify-between gap-2 mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+          <span>⚠ {cartError}</span>
+          <button onClick={clearCartError} className="text-red-400 hover:text-red-600">✕</button>
+        </div>
+      )}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Items */}
         <div className="lg:col-span-2 space-y-4">
