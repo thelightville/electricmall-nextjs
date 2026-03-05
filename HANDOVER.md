@@ -1,53 +1,426 @@
-# Electric Mall — Development Handover
+# Electric Mall - Development Handover
 
-**Date**: March 5, 2026  
-**Transferred from**: PVE1 (`172.16.16.20`) VS Code session  
-**Transfer to**: CT117 (`172.16.16.117`) VS Code Remote SSH session  
-**Reason**: Keeping development workloads scoped to the container/VM where they run
-
----
-
-## Project Overview
-
-Next.js 14 headless e-commerce storefront for **electricmall.com.ng** — an electrical supplies shop in Nigeria.  
-Backend: WooCommerce + WPGraphQL API on the same CT117 host (port 8019).
-
-- **Staging URL**: https://electricmall.myapps.com.ng *(to be promoted to production)*
-- **WooCommerce admin**: https://electricmall.com.ng/wp-admin
-- **GitHub**: `thelightville/electricmall-nextjs`, branch `master`
+**Last Updated:** March 5, 2026  
+**Handover From:** PVE (Proxmox Host)  
+**Handover To:** CT117 (172.16.16.117) SSH Session
 
 ---
 
-## Architecture
+## 🌐 Live URLs & Deployment Status
 
+### Production Sites
+| Domain | URL | Container Port | Public Port | Status |
+|--------|-----|----------------|-------------|--------|
+| **Electric Mall (Next.js)** | https://electricmall.myapps.com.ng | 3000 | 8040 | ✅ **LIVE** |
+| Electric Mall (WooCommerce) | https://electricmall.com.ng | 80 | 8019 | ✅ **LIVE** (Backend) |
+
+### Admin Access
+- **WP Admin:** https://electricmall.com.ng/wp-admin
+- **WooCommerce:** https://electricmall.com.ng/wp-admin/admin.php?page=wc-admin
+
+### Cloudflare Tunnels
+- Managed on PVE host via `cloudflared`
+- Configuration: `/root/.cloudflare/tunnel_config.json` (PVE)
+- Traffic flow: `Internet → Cloudflare → PVE Tunnel → CT117:8040` (Next.js)
+- Traffic flow: `Internet → Cloudflare → PVE Tunnel → CT117:8019` (WooCommerce)
+
+---
+
+## 🏗️ Full Architecture
+
+### Infrastructure Overview
 ```
-Cloudflare → cloudflared tunnel (PVE1/2/3)
-           → nginx :8080 (cloudflare-tunnel-proxy.conf)
-           → electricmall.myapps.com.ng server block → CT117:8040 (Next.js)
-           → electricmall.com.ng map entry → CT117:8019 (WooCommerce WordPress)
+┌─────────────────────────────────────────────────────────────┐
+│  PVE Host (Proxmox 8.x) - 172.16.16.1                       │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │  Cloudflare Tunnel (cloudflared)                      │  │
+│  │  Routes:                                              │  │
+│  │  - electricmall.myapps.com.ng → CT117:8040 (Next.js) │  │
+│  │  - electricmall.com.ng → CT117:8019 (WooCommerce)    │  │
+│  └───────────────────────────────────────────────────────┘  │
+│                           ↓                                  │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │  CT117 - Docker Host (172.16.16.117)                  │  │
+│  │  - Privileged LXC container                           │  │
+│  │  - Docker CE 27.x                                     │  │
+│  │                                                        │  │
+│  │  ┌─────────────────────────────────────────────────┐  │  │
+│  │  │  Electric Mall Next.js Stack                    │  │  │
+│  │  │  Network: electricmall-nextjs_default           │  │  │
+│  │  │                                                  │  │  │
+│  │  │  ┌────────────────────────────────────────────┐  │  │  │
+│  │  │  │ electricmall-nextjs                        │  │  │  │
+│  │  │  │ Tech: Next.js 14, React, Node 22          │  │  │  │
+│  │  │  │ Port: 8040→3000                           │  │  │  │
+│  │  │  │ WooCommerce API: http://172.16.16.117:8019│  │  │  │
+│  │  │  │ Standalone build, health checks           │  │  │  │
+│  │  │  └────────────────────────────────────────────┘  │  │  │
+│  │  └─────────────────────────────────────────────────┘  │  │
+│  │                                                        │  │
+│  │  ┌─────────────────────────────────────────────────┐  │  │
+│  │  │  Electric Mall WooCommerce Stack                │  │  │
+│  │  │  Network: electricmallcomng_site-network        │  │  │
+│  │  │                                                  │  │  │
+│  │  │  ┌────────────────────────────────────────────┐  │  │  │
+│  │  │  │ electricmall.com.ng-nginx (Port 8019→80)  │  │  │  │
+│  │  │  │ electricmall.com.ng-php (WP + WooCommerce)│  │  │  │
+│  │  │  │ electricmall.com.ng-mysql (Product DB)    │  │  │  │
+│  │  │  │ WordPress API exposed via /wp-json/       │  │  │  │
+│  │  │  └────────────────────────────────────────────┘  │  │  │
+│  │  └─────────────────────────────────────────────────┘  │  │
+│  └───────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-### Containers on CT117
-
-| Container | Stack dir | Port | Purpose |
-|-----------|-----------|------|---------|
-| `electricmall-nextjs` | `/opt/docker-sites/electricmall-nextjs/` | 8040 | Next.js frontend |
-| WooCommerce stack | `/opt/docker-sites/electricmall.com.ng/` | 8019→80 | WordPress + WooCommerce |
-
----
-
-## Repository State
-
-- **Branch**: `master`
-- **Last commit**: `feat: fix product slugs, images, logo + world-class visual redesign`
-- **Remote**: `https://github.com/thelightville/electricmall-nextjs`
-- **Status**: verify with `git status` on CT117 after clone
+### Technology Stack
+- **Framework:** Next.js 14 (App Router, React 18)
+- **Node:** 22.x
+- **Backend:** WooCommerce REST API + WPGraphQL
+- **Styling:** Tailwind CSS 3.x
+- **State:** React Context (Cart, Auth)
+- **Payment:** WooCommerce native checkout
+- **Build:** Standalone output, Docker
 
 ---
 
-## Environment Variables
+## 📦 Docker Containers & Networking
 
-Create `/opt/electricmall-nextjs/.env.local` on CT117.  
+### Active Containers on CT117
+```bash
+# Next.js Frontend (Port 8040)
+docker ps | grep "electricmall-nextjs"
+
+electricmall-nextjs   # Next.js app
+
+# WooCommerce Backend (Port 8019)
+docker ps | grep "electricmall.com.ng"
+
+electricmall.com.ng-nginx
+electricmall.com.ng-php      # WordPress + WooCommerce
+electricmall.com.ng-mysql
+```
+
+### Networks
+```bash
+# List networks
+pct exec 117 -- docker network ls | grep electricmall
+
+electricmall-nextjs_default           # Next.js network
+electricmallcomng_site-network        # WooCommerce network
+```
+
+---
+
+## 🔐 Environment Variables & Secrets
+
+### Next.js Environment (.env.local)
+**Location:** In Docker image or `/opt/docker-sites/electricmall-nextjs/.env.local` on CT117
+
+```env
+# WooCommerce API
+NEXT_PUBLIC_WC_STORE_URL=http://172.16.16.117:8019
+WC_CONSUMER_KEY=************  # ⚠️ Secret - WooCommerce API key
+WC_CONSUMER_SECRET=************  # ⚠️ Secret
+
+# App config
+NEXT_PUBLIC_SITE_URL=https://electricmall.myapps.com.ng
+NODE_ENV=production
+```
+
+### WooCommerce Configuration
+**Location:** WordPress admin → WooCommerce → Settings → Advanced → REST API
+
+- **API User:** Create dedicated API user with read/write permissions
+- **Keys:** Generate via WP admin → WooCommerce → Settings → Advanced → REST API
+- **Note:** Store Consumer Key/Secret securely, needed for Next.js .env
+
+---
+
+## 🛠️ Dev Toolchain Setup on CT117
+
+### Prerequisites
+```bash
+# SSH into CT117
+ssh root@172.16.16.117
+
+# Required software
+docker --version        # Docker 27.x
+docker compose version  # V2
+node --version          # Node 22+
+npm --version           # npm 10+
+```
+
+### Clone Repository on CT117
+```bash
+# SSH into CT117
+ssh root@172.16.16.117
+
+# Clone from GitHub
+cd /root
+git clone git@github.com:thelightville/electricmall-nextjs.git
+cd electricmall-nextjs
+
+# Checkout master branch
+git checkout master
+git pull origin master
+```
+
+### Install Dependencies
+```bash
+# On CT117, inside the cloned repo
+cd /root/electricmall-nextjs
+
+# Install dependencies
+npm install
+
+# Build Next.js standalone
+npm run build
+```
+
+---
+
+## 🚀 Deployment Workflow from CT117
+
+### Method 1: Deploy via Docker Compose (Recommended)
+```bash
+# SSH into CT117
+cd /opt/docker-sites/electricmall-nextjs
+
+# Pull latest code
+git pull origin master
+
+# Rebuild and restart
+docker compose down
+docker compose build --no-cache
+docker compose up -d
+
+# Verify
+curl -I http://localhost:8040/
+```
+
+### Method 2: Hot Deploy (Quick Updates)
+```bash
+# SSH into CT117
+cd /root/electricmall-nextjs
+
+# Pull changes
+git pull origin master
+
+# Rebuild
+npm install
+npm run build
+
+# Copy standalone to running container
+docker cp .next/standalone electricmall-nextjs:/app/
+docker cp public electricmall-nextjs:/app/public/
+docker cp .next/static electricmall-nextjs:/app/.next/static/
+
+# Restart container
+docker restart electricmall-nextjs
+```
+
+### Method 3: Deploy Script (Automated)
+```bash
+# Use included deploy.sh script
+cd /root/electricmall-nextjs
+./deploy.sh
+
+# Script performs:
+# - Git pull
+# - npm install & build
+# - Docker rebuild
+# - Container restart
+```
+
+---
+
+## 🔧 Infrastructure Dependencies (External to CT117)
+
+### Managed on PVE Host
+1. **Cloudflare Tunnel** (`cloudflared`)
+   - Config: `/root/.cloudflare/tunnel_config.json`
+   - Service: `systemctl status cloudflared@electricmall-tunnel`
+   - Routes:
+     - `electricmall.myapps.com.ng` → `http://172.16.16.117:8040`
+     - `electricmall.com.ng` → `http://172.16.16.117:8019`
+   - Restart: `systemctl restart cloudflared@electricmall-tunnel`
+
+2. **Container Lifecycle**
+   - CT117 starts on PVE boot
+   - Containers have `restart: unless-stopped` policy
+
+### DNS Configuration (Cloudflare Dashboard)
+- **electricmall.myapps.com.ng** → CNAME to Cloudflare Tunnel UUID
+- **electricmall.com.ng** → CNAME to Cloudflare Tunnel UUID
+- Proxy: ✅ Enabled (orange cloud)
+- SSL/TLS: Full (strict)
+
+---
+
+## ⚠️ Known Issues & TODO Items
+
+### Recent Fixes (Commit d679cfd)
+1. **✅ Cart Persistence** - Switched from sessionStorage to localStorage
+2. **✅ Remove Cart Item** - Fixed API method from DELETE to POST
+3. **✅ Remove Coupon** - Fixed API method from DELETE to POST
+4. **✅ Brand Logos** - Added 11 electrical brand logos
+5. **✅ Logo Variations** - Added 3 ElectricMall logo variants
+6. **✅ Hero Slider** - Added homepage hero slider component
+7. **✅ Middleware** - Added Next.js middleware for routing
+
+### TODO List
+- [ ] Set up proper product image optimization (WebP)
+- [ ] Add product search functionality
+- [ ] Implement product filtering (category, price, brand)
+- [ ] Add user authentication (WooCommerce customer accounts)
+- [ ] Implement order tracking
+- [ ] Add payment gateway integration (Paystack/Flutterwave)
+- [ ] Set up email notifications (order confirmations)
+- [ ] Add product reviews and ratings
+- [ ] Implement wishlist functionality
+- [ ] Add SEO metadata for all pages
+- [ ] Set up analytics (Google Analytics/Plausible)
+- [ ] Add error monitoring (Sentry)
+
+---
+
+## 🔑 SSH Access to Target Host
+
+### CT117 (Docker Host)
+```bash
+# From PVE or any host with access
+ssh root@172.16.16.117
+
+# From external (via PVE stream proxy)
+ssh -p 2117 root@142.180.236.143
+
+# Container shell access
+pct enter 117  # From PVE host only
+```
+
+### GitHub SSH Keys
+**Location on CT117:** `/root/.ssh/id_rsa` (deploy key)
+
+```bash
+# Test GitHub access from CT117
+ssh -T git@github.com
+# Should return: "Hi thelightville! You've successfully authenticated..."
+```
+
+---
+
+## 📊 Current Deployment Status Summary
+
+### Last Deployment
+- **Commit:** `d679cfd` (fix: cart persistence, remove item API, coupon removal)
+- **Date:** March 5, 2026
+- **Deployed By:** Manual deployment
+- **Status:** ✅ **PRODUCTION LIVE**
+
+### Recent Commits
+```
+d679cfd - fix: cart persistence, remove item API, coupon removal (Latest)
+92b9be2 - feat: fix product slugs, images, logo + world-class visual redesign
+ee6b388 - fix: port 8040, Suspense boundaries, default exports, type fixes
+0eba86b - feat: initial ElectricMall Next.js 14 headless storefront
+```
+
+### Verified Pages
+- ✅ Homepage (/) → Product showcases, hero slider, brands
+- ✅ Shop (/shop) → Product listing
+- ✅ Product Pages (/product/[slug]) → Product details, add to cart
+- ✅ Cart (/cart) → Cart management, quantity updates, remove items
+- ✅ Checkout (/checkout) → WooCommerce checkout integration
+- ✅ Order Complete (/checkout/complete) → Order confirmation
+
+### Git Status
+```bash
+On branch master
+Your branch is up to date with 'origin/master'.
+nothing to commit, working tree clean
+```
+
+---
+
+## 🛒 WooCommerce Integration Details
+
+### API Endpoints Used
+```
+# WordPress REST API v2 endpoints
+GET  /wp-json/wc/store/v1/products
+GET  /wp-json/wc/store/v1/products/:id
+GET  /wp-json/wc/store/v1/products/categories
+
+# Cart API  (WooCommerce Store API)
+GET  /wp-json/wc/store/v1/cart
+POST /wp-json/wc/store/v1/cart/add-item
+POST /wp-json/wc/store/v1/cart/update-item
+POST /wp-json/wc/store/v1/cart/remove-item  # ⚠️ Uses POST, not DELETE
+POST /wp-json/wc/store/v1/cart/apply-coupon
+POST /wp-json/wc/store/v1/cart/remove-coupon  # ⚠️ Uses POST, not DELETE
+
+# Checkout
+POST /wp-json/wc/store/v1/checkout
+```
+
+### Cart Token Management
+- **Storage:** `localStorage` (key: `woo-cart-token`)
+- **Persistence:** Survives browser restarts
+- **Cleared:** On order completion or manual clear
+- **Important:** Session tokens are stored locally, not on server
+
+---
+
+## 🔗 Quick Reference Links
+
+| Resource | Location |
+|----------|----------|
+| **Live Site** | https://electricmall.myapps.com.ng |
+| **WooCommerce Backend** | https://electricmall.com.ng/wp-admin |
+| **GitHub Repo** | https://github.com/thelightville/electricmall-nextjs |
+| **Latest Commit** | https://github.com/thelightville/electricmall-nextjs/commit/d679cfd |
+| **Docker Container** | `ssh root@172.16.16.117` → `docker ps \| grep electricmall` |
+| **Container Logs** | `docker logs electricmall-nextjs` |
+| **WooCommerce Logs** | WP Admin → WooCommerce → Status → Logs |
+
+---
+
+## 📞 Support Contacts
+
+For deployment issues:
+- **Infrastructure:** Check CT117 status on PVE: `pct status 117`
+- **Cloudflare Tunnel:** Restart on PVE: `systemctl restart cloudflared@electricmall-tunnel`
+- **Next.js Issues:** Check container logs: `docker logs electricmall-nextjs`
+- **WooCommerce Issues:** Check WP logs or contact WooCommerce support
+- **Cart/Checkout Issues:** Verify WooCommerce Store API is enabled in WP Admin
+
+---
+
+## 🚨 Critical Notes
+
+### Cart API Method Changes
+**Recent fix (commit d679cfd):** WooCommerce Store API requires **POST** requests for:
+- `/cart/remove-item` (was incorrectly using DELETE)
+- `/cart/remove-coupon` (was incorrectly using DELETE)
+
+If you see cart removal errors, verify these endpoints use POST with body payload.
+
+### Product Images
+All product images are managed in WooCommerce. Next.js uses `next/image` with:
+- Remote patterns configured for WooCommerce media
+- Automatic image optimization
+- Lazy loading enabled
+
+### Performance
+- Next.js uses ISR (Incremental Static Regeneration) for product pages
+- Cache revalidation: 60 seconds default
+- Product data cached client-side in React Context
+
+---
+
+**End of Handover Document**  
+*All information current as of March 5, 2026*  
+*Next review: After first deployment from CT117 SSH session*  
 Get values from `/root/electricmall-nextjs/.env.local` on PVE1 (copy securely via SSH, never commit):
 
 ```env
